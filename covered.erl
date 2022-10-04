@@ -1,0 +1,1 @@
+if 1 > 5 -> greater; 1 == 5 -> equal; 1 < 5 -> less end.
