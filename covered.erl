@@ -1,1 +1,1 @@
-if 1 > 5 -> greater; 1 == 5 -> equal; 1 < 5 -> less end.
+if 5 == 6 -> io:fwrite("True"); true -> io:fwrite("False") end.
