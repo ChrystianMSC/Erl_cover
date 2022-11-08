@@ -3,6 +3,7 @@
 -compile(export_all).
 
 evaluate_expression() ->
+    % defining couter and adding it to persistent term
     Counter = counters:new(1, [atomics]),
     persistent_term:put(1, Counter),
     {ok, File} = file:read_file("covered.erl"),
@@ -18,11 +19,13 @@ evaluate_expression() ->
         Cond == 'if' ->
             io:format("~p/~p -> ", [Cond, Line]),
             ClauseList = lists:nth(3, Tipe),
+            % Getting the counter for printing if
             print_clauses_if(ClauseList, counters:get(persistent_term:get(1),1), length(ClauseList)+1, 1),
             io:fwrite("~n~n");
         Cond == 'case' ->
             io:format("~p/~p -> ", [Cond, Line]),
             ClauseList = lists:nth(4, Tipe),
+            % Getting the counter for printing case (maybe not working)
             print_clauses_case(ClauseList, counters:get(persistent_term:get(1),1), length(ClauseList)+1, 1),
             io:fwrite("~n~n");
         true ->
@@ -63,7 +66,7 @@ print_clauses_case(Clauses, Num, Length, Current) ->
             print_clauses_case(Clauses, Num, Length, Current + 1)
     end.
 
-% ---------------------------------------------------------- Automatic Instrumamtation ----------------------------------------------------------------- %
+% ------------------------------------- Automatic Instrumentation ------------------------------------ %
 
 instrumenting(Parsed) ->
     Tipe = tuple_to_list(lists:nth(1, Parsed)),
@@ -92,6 +95,7 @@ instrument_clauses(ClauseList, Length, Current) ->
         Current < Length ->
             Clause = tuple_to_list(lists:nth(Current, ClauseList)),
             Line = lists:nth(2, Clause),
+            % adding to target code the AST of a code that adds the clause number to the counter
             Instrumentation = [{call,Line,{remote,Line,{atom,Line,counters},{atom,Line,add}},[{call,Line,{remote,Line,{atom,Line,persistent_term},{atom,Line,get}},[{integer,Line,1}]},{integer,Line,1},{integer,Line,Current}]}],
             Item = Instrumentation ++ lists:nth(5, Clause),
             Clausein = setelement(5, lists:nth(Current, ClauseList), Item),
