@@ -66,7 +66,7 @@ print_clauses_case(Clauses, Num, Length, Current) ->
             print_clauses_case(Clauses, Num, Length, Current + 1)
     end.
 
-% ------------------------------------- Automatic Instrumentation ------------------------------------ %
+% ----------------------- Automatic Instrumentation ------------------------------ %
 
 instrumenting(Parsed) ->
     Tipe = tuple_to_list(lists:nth(1, Parsed)),
