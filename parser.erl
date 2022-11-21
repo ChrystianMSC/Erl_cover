@@ -2,34 +2,106 @@
 
 -compile(export_all).
 
+parse_nested(Parsed) ->
+    SizeP = length(Parsed),
+
+    if
+        SizeP == 1 ->
+            Counter = counters:new(1, [atomics]),
+            persistent_term:put(1, Counter),
+            Parsedin = [instrumenting(Parsed)],
+            {value, Result, _} = erl_eval:exprs(Parsedin, []),
+            Tipe = tuple_to_list(lists:nth(1, Parsed)),
+            Cond = lists:nth(1, Tipe),
+            Line = lists:nth(2, Tipe),
+            if 
+                Cond == 'if' ->
+                    io:format("~p/~p -> ", [Cond, Line]),
+                    ClauseList = lists:nth(3, Tipe),
+                    % Getting the counter for printing if
+                    print_clauses_if(ClauseList, counters:get(persistent_term:get(1),1), length(ClauseList)+1, 1),
+                    io:fwrite("~n~n");
+                Cond == 'case' ->
+                    io:format("~p/~p -> ", [Cond, Line]),
+                    ClauseList = lists:nth(4, Tipe),
+                    % Getting the counter for printing case (maybe not working)
+                    print_clauses_case(ClauseList, counters:get(persistent_term:get(1),1), length(ClauseList)+1, 1),
+                    io:fwrite("~n~n");
+                true ->
+                    io:fwrite("Nada ~n")
+            end;
+        true ->
+            multi_branch(Parsed, SizeP, 1)
+    end.
+
+
+multi_branch(Parsed, SizeP, BranchN) ->
+    if
+        BranchN > SizeP ->
+            ok;
+        true ->
+            Counter = counters:new(1, [atomics]),
+            persistent_term:put(1, Counter),
+            Parsedin = [instrumenting(Parsed)],
+            {value, Result, _} = erl_eval:exprs(Parsedin, []),
+            Tipe = tuple_to_list(lists:nth(BranchN, Parsed)),
+            Cond = lists:nth(1, Tipe),
+            Line = lists:nth(2, Tipe),
+            if 
+                Cond == 'if' ->
+                    io:format("~p/~p -> ", [Cond, Line]),
+                    ClauseList = lists:nth(3, Tipe),
+                    % Getting the counter for printing if
+                    print_clauses_if(ClauseList, counters:get(persistent_term:get(1),1), length(ClauseList)+1, 1),
+                    io:fwrite("~n~n");
+                Cond == 'case' ->
+                    io:format("~p/~p -> ", [Cond, Line]),
+                    ClauseList = lists:nth(4, Tipe),
+                    % Getting the counter for printing case (maybe not working)
+                    print_clauses_case(ClauseList, counters:get(persistent_term:get(1),1), length(ClauseList)+1, 1),
+                    io:fwrite("~n~n");
+                true ->
+                    io:fwrite("Nada ~n")
+            end,
+            multi_branch(Parsed, SizeP, BranchN + 1)
+    end.
+
 evaluate_expression() ->
     % defining couter and adding it to persistent term
-    Counter = counters:new(1, [atomics]),
-    persistent_term:put(1, Counter),
     {ok, File} = file:read_file("covered.erl"),
     Expression = unicode:characters_to_list(File),
     {ok, Tokens, _} = erl_scan:string(Expression),
     {ok, Parsed} = erl_parse:parse_exprs(Tokens),
-    Parsedin = [instrumenting(Parsed)],
-    {value, Result, _} = erl_eval:exprs(Parsedin, []),
-    Tipe = tuple_to_list(lists:nth(1, Parsed)),
-    Cond = lists:nth(1, Tipe),
-    Line = lists:nth(2, Tipe),
-    if 
-        Cond == 'if' ->
-            io:format("~p/~p -> ", [Cond, Line]),
-            ClauseList = lists:nth(3, Tipe),
-            % Getting the counter for printing if
-            print_clauses_if(ClauseList, counters:get(persistent_term:get(1),1), length(ClauseList)+1, 1),
-            io:fwrite("~n~n");
-        Cond == 'case' ->
-            io:format("~p/~p -> ", [Cond, Line]),
-            ClauseList = lists:nth(4, Tipe),
-            % Getting the counter for printing case (maybe not working)
-            print_clauses_case(ClauseList, counters:get(persistent_term:get(1),1), length(ClauseList)+1, 1),
-            io:fwrite("~n~n");
+
+    SizeP = length(Parsed),
+
+    if
+        SizeP == 1 ->
+            Counter = counters:new(1, [atomics]),
+            persistent_term:put(1, Counter),
+            Parsedin = [instrumenting(Parsed)],
+            {value, Result, _} = erl_eval:exprs(Parsedin, []),
+            Tipe = tuple_to_list(lists:nth(1, Parsed)),
+            Cond = lists:nth(1, Tipe),
+            Line = lists:nth(2, Tipe),
+            if 
+                Cond == 'if' ->
+                    io:format("~p/~p -> ", [Cond, Line]),
+                    ClauseList = lists:nth(3, Tipe),
+                    % Getting the counter for printing if
+                    print_clauses_if(ClauseList, counters:get(persistent_term:get(1),1), length(ClauseList)+1, 1),
+                    io:fwrite("~n~n");
+                Cond == 'case' ->
+                    io:format("~p/~p -> ", [Cond, Line]),
+                    ClauseList = lists:nth(4, Tipe),
+                    % Getting the counter for printing case (maybe not working)
+                    print_clauses_case(ClauseList, counters:get(persistent_term:get(1),1), length(ClauseList)+1, 1),
+                    io:fwrite("~n~n");
+                true ->
+                    io:fwrite("Nada ~n")
+            end;
         true ->
-            io:fwrite("Nada ~n")
+            multi_branch(Parsed, SizeP, 1)
     end.
 
 print_clauses_if(Clauses, Num, Length, Current) ->
