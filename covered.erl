@@ -1,1 +1,1 @@
-if 1 == 1 -> if 2 == 2 -> true; true -> false end; true -> false end.
+if 1 == 1 -> true; true -> false end.
