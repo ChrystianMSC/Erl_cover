@@ -4,7 +4,6 @@
 
 parse_nested(Parsed) ->
     SizeP = length(Parsed),
-
     if
         SizeP == 1 ->
             Counter = counters:new(1, [atomics]),
@@ -29,7 +28,8 @@ parse_nested(Parsed) ->
                     io:fwrite("~n~n");
                 true ->
                     io:fwrite("Nada ~n")
-            end;
+            end,
+            io:format("           ~p~n~n", [Result]);
         true ->
             multi_branch(Parsed, SizeP, 1)
     end.
@@ -63,6 +63,7 @@ multi_branch(Parsed, SizeP, BranchN) ->
                 true ->
                     io:fwrite("Nada ~n")
             end,
+            io:format("~p", [Result]),
             multi_branch(Parsed, SizeP, BranchN + 1)
     end.
 
@@ -99,7 +100,8 @@ evaluate_expression() ->
                     io:fwrite("~n~n");
                 true ->
                     io:fwrite("Nada ~n")
-            end;
+            end,
+            Result;
         true ->
             multi_branch(Parsed, SizeP, 1)
     end.
@@ -110,8 +112,21 @@ print_clauses(Clauses, Num, Length, Current) ->
             Expr = tuple_to_list(lists:nth(Current, Clauses)),
             Opr = lists:nth(4, Expr),
             Line = lists:nth(2, Expr),
-            io:format("~p****/~p -> ", [Opr, Line]),
-            print_clauses(Clauses, Num, Length, Current + 1);
+            io:format("~p/~p -> ", [Opr, Line]),
+            Inside = lists:nth(5, Expr),
+            Tipe = tuple_to_list(lists:nth(1, Inside)),
+            Cond = lists:nth(1, Tipe),
+            if
+                Cond == 'if' ->
+                    io:format("~n~n          "), 
+                    parse_nested(Inside);
+                Cond == 'case' ->
+                    io:format("~n~n          "), 
+                    parse_nested(Inside);
+                true ->
+                    ok
+            end,
+            print_clauses_if(Clauses, Num, Length, Current + 1);
         Current == Length ->
             ok;
         true ->
@@ -127,7 +142,20 @@ print_clauses_case(Clauses, Num, Length, Current) ->
             Expr = tuple_to_list(lists:nth(Current, Clauses)),
             Opr = lists:nth(3, Expr),
             Line = lists:nth(2, Expr),
-            io:format("~p****/~p -> ", [Opr, Line]),
+            io:format("~p/~p -> ", [Opr, Line]),
+            Inside = lists:nth(5, Expr),
+            Tipe = tuple_to_list(lists:nth(1, Inside)),
+            Cond = lists:nth(1, Tipe),
+            if
+                Cond == 'if' ->
+                    io:format("~n~n          "), 
+                    parse_nested(Inside);
+                Cond == 'case' ->
+                    io:format("~n~n          "), 
+                    parse_nested(Inside);
+                true ->
+                    ok
+            end,
             print_clauses_case(Clauses, Num, Length, Current + 1);
         Current == Length ->
             ok;
