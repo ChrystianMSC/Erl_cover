@@ -31,6 +31,7 @@ parsed_in(Parsed, SizeP, Now, Parsedin) ->
     end.
 
 
+
 get_result(SizeP, Parsed, Now) ->
     if
         Now =< SizeP ->
