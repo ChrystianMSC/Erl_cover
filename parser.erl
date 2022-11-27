@@ -59,7 +59,6 @@ get_result(SizeP, Parsed, Now) ->
             ok
     end.
 
-
 print_clauses_if(Clauses, Num, Length, Current) ->
     if
         Current == Num ->
@@ -94,7 +93,7 @@ print_clauses_case(Clauses, Num, Length, Current) ->
             print_clauses_case(Clauses, Num, Length, Current + 1)
     end.
 
-% ----------------------- Automatic Instrumentation ------------------------------ %
+% ------------------------------------- Automatic Instrumentation ------------------------------------ %
 
 instrumenting(Parsed, Now) ->
     Tipe = tuple_to_list(lists:nth(Now, Parsed)),
