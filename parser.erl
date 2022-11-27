@@ -59,7 +59,7 @@ get_result(SizeP, Parsed, Now) ->
             ok
     end.
 
-print_clauses_if(Clauses, Num, Length, Current) ->
+print_clauses(Clauses, Num, Length, Current) ->
     if
         Current == Num ->
             Expr = tuple_to_list(lists:nth(Current, Clauses)),
@@ -73,7 +73,7 @@ print_clauses_if(Clauses, Num, Length, Current) ->
             Expr = tuple_to_list(lists:nth(Current, Clauses)),
             Line = lists:nth(2, Expr),
             io:fwrite("Clause not executed/~p -> ", [Line]),
-            print_clauses_if(Clauses, Num, Length, Current + 1)
+            print_clauses(Clauses, Num, Length, Current + 1)
     end.
 
 print_clauses_case(Clauses, Num, Length, Current) ->
@@ -93,6 +93,7 @@ print_clauses_case(Clauses, Num, Length, Current) ->
             print_clauses_case(Clauses, Num, Length, Current + 1)
     end.
 
+% ------------------------------------- Automatic Instrumentation ------------------------------------ %
 % ------------------------------------- Automatic Instrumentation ------------------------------------ %
 
 instrumenting(Parsed, Now) ->
@@ -122,6 +123,7 @@ instrument_clauses(ClauseList, Length, Current, Now) ->
         Current < Length ->
             Clause = tuple_to_list(lists:nth(Current, ClauseList)),
             Line = lists:nth(2, Clause),
+            Instrumentation = [{op,Line,'!',{call,Line,{atom,Line,self},[]},{tuple,Line,[{atom,Line,clause},{integer,Line,Current}]}}],
             % adding to target code the AST of a code that adds the clause number to the counter
             Instrumentation = [{call,Line,{remote,Line,{atom,Line,counters},{atom,Line,add}},[{call,Line,{remote,Line,{atom,Line,persistent_term},{atom,Line,get}},[{integer,Line,1}]},{integer,Line,Now},{integer,Line,Current}]}],
             Item = Instrumentation ++ lists:nth(5, Clause),
