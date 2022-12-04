@@ -2,6 +2,33 @@
 
 -compile(export_all).
 
+branch_filter(Parsed, SizeP, CurrentBranch) ->
+    if
+        CurrentBranch =< SizeP ->
+            Tipe = tuple_to_list(lists:nth(CurrentBranch, Parsed)),
+            Cond = lists:nth(1, Tipe),
+            if 
+                Cond == 'if' ->
+                    branch_filter(Parsed, SizeP, CurrentBranch + 1);
+                Cond == 'case' ->
+                    branch_filter(Parsed, SizeP, CurrentBranch + 1);
+                true ->
+                    FilteredParsed = erlang:delete_element(CurrentBranch, list_to_tuple(Parsed)),
+                    FilteredParsed2 = tuple_to_list(FilteredParsed),
+                    if
+                        CurrentBranch == 1 ->
+                            branch_filter(FilteredParsed2, SizeP - 1, CurrentBranch);
+                        true ->
+                            branch_filter(FilteredParsed2, SizeP - 1, CurrentBranch - 1)
+                    end
+            end;
+        true ->
+            Parsed
+    end.
+
+
+
+
 parser(FileName) ->
     {ok, File} = file:read_file(FileName),
     Expression = unicode:characters_to_list(File),
@@ -15,11 +42,16 @@ evaluate_expression(FileName) ->
     Parsed = parser(FileName),
 
     SizeP = length(Parsed),
-    ParsedinF = instrument(Parsed, SizeP),
+
+    FilteredParsed = branch_filter(Parsed, SizeP, 1),
+
+    SizeFiltered = length(FilteredParsed),
+
+    InstrumentedP = instrument(FilteredParsed, SizeFiltered),
 
     % Execute the code and see the result
-    {value, Result, _} = erl_eval:exprs(ParsedinF, []),
-    get_result(SizeP, Parsed, 1),
+    {value, Result, _} = erl_eval:exprs(InstrumentedP, []),
+    get_result(SizeFiltered, FilteredParsed, 1),
     Result.
 
 instrument(Parsed, SizeP) ->
@@ -33,8 +65,8 @@ instrument(Parsed, SizeP) ->
 
 
     % TODO, filtar o que é branch
-
-
+    
+        
 
     ParsedinF = parsed_in(Parsed, SizeP, 1, Parsedin),
     ParsedinF.
@@ -124,18 +156,19 @@ print_clauses_case(Clauses, Num, Length, Current) ->
 
 % Returns the Branch with its clauses insturmented
 instrumenting(Parsed, CurrentBranch) ->
-    Tipe = tuple_to_list(lists:nth(CurrentBranch, Parsed)),
-    Cond = lists:nth(1, Tipe),
+    BranchList = list_to_tuple(Parsed),
+    Branch = element(CurrentBranch, BranchList),
+    Cond = element(1, Branch),
     if 
         Cond == 'if' ->
-            ClauseList = lists:nth(3, Tipe),
+            ClauseList = element(3, Branch),
             Clauselistin = instrument_clauses(ClauseList, length(ClauseList)+1, 1, CurrentBranch),
             Clauselistin2 = erlang:delete_element(length(Clauselistin), list_to_tuple(Clauselistin)),
             Clauselistin3 = tuple_to_list(Clauselistin2),
             Parsedin = setelement(3, lists:nth(CurrentBranch, Parsed), Clauselistin3),
             Parsedin;
         Cond == 'case' ->
-            ClauseList = lists:nth(4, Tipe),
+            ClauseList = element(4, Branch),
             Clauselistin = instrument_clauses(ClauseList, length(ClauseList)+1, 1, CurrentBranch),
             Clauselistin2 = erlang:delete_element(length(Clauselistin), list_to_tuple(Clauselistin)),
             Clauselistin3 = tuple_to_list(Clauselistin2),
