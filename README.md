@@ -1,4 +1,4 @@
-# [Erlang/OTP](https://www.erlang.org) **Branch Coverage Tool **
+# [Erlang/OTP](https://www.erlang.org) **Branch Coverage Tool**
 
 **Erlang** is a programming language and runtime system for building massively scalable soft real-time systems with requirements on high availability.
 
