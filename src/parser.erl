@@ -61,13 +61,7 @@ instrument(Parsed, SizeP) ->
     persistent_term:put(1, Counter),
     % Instrumenting the code
     Parsedin = [],
-
-
-
     % TODO, filtar o que é branch
-    
-        
-
     ParsedinF = parsed_in(Parsed, SizeP, 1, Parsedin),
     ParsedinF.
 
