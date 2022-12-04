@@ -17,6 +17,6 @@ In order to use this coverage tool, you need to clone this repository, access it
 evaluate_expression("FileName").
 ```
 
-In the future, we intend to make the complation process more scalable using a MakeFile.
+In the future, we intend to make the compilation process more scalable using a MakeFile.
 
 Thank you for acessing our project
