@@ -13,7 +13,7 @@ It was made in UFMG at the compilers Lab in partnership with the Elixir/Dashbit 
 
 ## How to use it
 
-In order to use this coverage tool, you need to clone this repository, access it, and then open ans erl terminal, and compile the parser module, after this you can run this function using the target file name as the parameter:
+In order to use this coverage tool, you need to clone this repository, access it, and then open an erl terminal, and compile the parser module, after this you can run this function using the target file name as the parameter:
 
 ```c(parser).
 evaluate_expression("FileName").
