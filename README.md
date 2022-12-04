@@ -1,4 +1,4 @@
-# [Erlang/OTP](https://www.erlang.org)
+# [Erlang/OTP](https://www.erlang.org) **Branch Coverage Tool **
 
 **Erlang** is a programming language and runtime system for building massively scalable soft real-time systems with requirements on high availability.
 
@@ -8,6 +8,8 @@
 An executable line contains an Erlang expression such as a matching or a function call. A blank line or a line containing a comment, function head or pattern in a case- or receive statement is not executable.
 
 **This project** aims to expand the cover tool and support branch coverage for Erlang (and Elixir). A branch a possible execution path the code can take after a decision such as an if statement, thus giving a more detailed output on test coverage.
+
+It was made in UFMG at the compilers Lab in partnership with the Elixir/Dashbit team
 
 ## How to use it
 
