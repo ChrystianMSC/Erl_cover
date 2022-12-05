@@ -1,4 +1,4 @@
-# [Erlang/OTP](https://www.erlang.org)
+# [Erlang/OTP](https://www.erlang.org) **Branch Coverage Tool**
 
 **Erlang** is a programming language and runtime system for building massively scalable soft real-time systems with requirements on high availability.
 
@@ -9,14 +9,16 @@ An executable line contains an Erlang expression such as a matching or a functio
 
 **This project** aims to expand the cover tool and support branch coverage for Erlang (and Elixir). A branch a possible execution path the code can take after a decision such as an if statement, thus giving a more detailed output on test coverage.
 
+It was made in UFMG at the compilers Lab in partnership with the Elixir/Dashbit team
+
 ## How to use it
 
-In order to use this coverage tool, you need to clone this repository, access it, and then open ans erl terminal, and compile the parser module, after this you can run this function using the target file name as the parameter:
+In order to use this coverage tool, you need to clone this repository, access it, and then open an erl terminal, and compile the parser module, after this you can run this function using the target file name as the parameter:
 
 ```c(parser).
 evaluate_expression("FileName").
 ```
 
-In the future, we intend to make the complation process more scalable using a MakeFile.
+In the future, we intend to make the compilation process more scalable using a MakeFile.
 
 Thank you for acessing our project
