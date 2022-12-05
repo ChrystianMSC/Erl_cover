@@ -50,6 +50,7 @@ branch_filter(Parsed, ParsedLenght, CurrentBranch) ->
             {Parsed, FilteredLenght}
     end.
 
+
 instrument(Parsed, Lenght) ->
     % Create a counter where each position is a branch
     Counter = counters:new(Lenght, [atomics]),
