@@ -27,34 +27,7 @@ branch_filter(Parsed, SizeP, CurrentBranch) ->
     end.
 
 
-
-
-parser(FileName) ->
-    {ok, File} = file:read_file(FileName),
-    Expression = unicode:characters_to_list(File),
-    {ok, Tokens, _} = erl_scan:string(Expression),
-    {ok, Parsed} = erl_parse:parse_exprs(Tokens),
-    Parsed.
-
-
-evaluate_expression(FileName) ->
-    % Reading and parsing the code
-    Parsed = parser(FileName),
-
-    SizeP = length(Parsed),
-
-    FilteredParsed = branch_filter(Parsed, SizeP, 1),
-
-    SizeFiltered = length(FilteredParsed),
-
-    InstrumentedP = instrument(FilteredParsed, SizeFiltered),
-
-    % Execute the code and see the result
-    {value, Result, _} = erl_eval:exprs(InstrumentedP, []),
-    get_result(SizeFiltered, FilteredParsed, 1),
-    Result.
-
-instrument(Parsed, SizeP) ->
+instrument(Parsed, Lenght) ->
     % Create a counter where each position is a branch
     Counter = counters:new(SizeP, [atomics]),
     % Add the ccounter to the persistent_term
