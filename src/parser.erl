@@ -24,32 +24,28 @@ parser(FileName) ->
     ParsedLenght = length(Parsed),
     {Parsed, ParsedLenght}.
 
-% Filter the code to remove what is not branches 
-branch_filter(Parsed, ParsedLenght, CurrentBranch) ->
-    if
-        CurrentBranch =< ParsedLenght ->
-            Tipe = tuple_to_list(lists:nth(CurrentBranch, Parsed)),
-            Statement = lists:nth(1, Tipe),
-            if 
-                Statement == 'if' ->
-                    branch_filter(Parsed, ParsedLenght, CurrentBranch + 1);
-                Statement == 'case' ->
-                    branch_filter(Parsed, ParsedLenght, CurrentBranch + 1);
-                true ->
-                    Filterering = erlang:delete_element(CurrentBranch, list_to_tuple(Parsed)),
-                    FilteredParsed = tuple_to_list(Filterering),
-                    if
-                        CurrentBranch == 1 ->
-                            branch_filter(FilteredParsed, ParsedLenght - 1, CurrentBranch);
-                        true ->
-                            branch_filter(FilteredParsed, ParsedLenght - 1, CurrentBranch - 1)
-                    end
-            end;
+branch_filter(Parsed, Lenght, CurrentBranch) ->
+    case CurrentBranch =< Lenght of
         true ->
-            FilteredLenght = length(Parsed),
-            {Parsed, FilteredLenght}
+            Statement = lists:nth(1, lists:nth(CurrentBranch, Parsed)),
+            case Statement of
+                'if' ->
+                    branch_filter(Parsed, Lenght, CurrentBranch + 1);
+                'case' ->
+                    branch_filter(Parsed, Lenght, CurrentBranch + 1);
+                _ ->
+                    NewParsed = erlang:delete_element(CurrentBranch, Parsed),
+                    NewLenght = length(NewParsed),
+                    NewCurrentBranch = 
+                        case CurrentBranch == 1 of
+                            true -> CurrentBranch;
+                            false -> CurrentBranch - 1
+                        end,
+                    branch_filter(NewParsed, NewLenght, NewCurrentBranch)
+            end;
+        false ->
+            {Parsed, Lenght}
     end.
-
 
 instrument(Parsed, Lenght) ->
     % Create a counter where each position is a branch
@@ -63,36 +59,24 @@ instrument(Parsed, Lenght) ->
 
 
 % Instrument each branch individually, recursively and store it in the Holder
-instrument_parsed(Parsed, Lenght, CurrentBranch, Holder) ->
-    if
-        CurrentBranch =< Lenght ->
-            InstrumentingParsed = Holder ++ [instrument_branch(Parsed, CurrentBranch)],
-            instrument_parsed(Parsed, Lenght, CurrentBranch+1, InstrumentingParsed);
-        true ->
-            Holder
-    end.
+instrument_parsed(Parsed, Length, CurrentBranch, Holder) ->
+  case CurrentBranch =< Length of
+    true ->
+      InstrumentingParsed = Holder ++ [instrument_branch(Parsed, CurrentBranch)],
+      instrument_parsed(Parsed, Length, CurrentBranch + 1, InstrumentingParsed);
+    false ->
+      Holder
+  end.
 
 
-% Returns the Branch with its clauses insturmented
 instrument_branch(Parsed, CurrentBranch) ->
-    % transform the Parsed list into a tuple
-    BranchList = list_to_tuple(Parsed),
+    Branch = lists:nth(CurrentBranch, Parsed),
+    Statement = lists:nth(1, Branch),
 
-    Branch = element(CurrentBranch, BranchList),
-    Statement = element(1, Branch),
-
-    % instrument the branch based on it statemant type
-    if 
-        Statement == 'if' ->
-            InstrumentedgParsed = statement_instrument(Branch, CurrentBranch, Parsed, 3),
-            InstrumentedgParsed;
-
-        Statement == 'case' ->
-            InstrumentedgParsed = statement_instrument(Branch, CurrentBranch, Parsed, 4),
-            InstrumentedgParsed;
-
-        true ->
-            io:fwrite("Nada ~n")
+    case Statement of
+        'if' -> statement_instrument(Branch, CurrentBranch, Parsed, 3);
+        'case' -> statement_instrument(Branch, CurrentBranch, Parsed, 4);
+        _ -> io:fwrite("Nada ~n")
     end.
 
 statement_instrument(Branch, CurrentBranch, Parsed, Statement) ->
@@ -130,55 +114,44 @@ instrument_clauses(ClauseList, Length, Current, CurrentBranch) ->
 
 % Use the result of the instrumentantion and print the clauses that where executed in each branch
 get_result(ParsedLenght, Parsed, CurrentBranch) ->
-    if
-        CurrentBranch =< ParsedLenght ->
-
-            Branch = tuple_to_list(lists:nth(CurrentBranch, Parsed)),
-            Statement = lists:nth(1, Branch),
-            Line = lists:nth(2, Branch),
-
-            if 
-                Statement == 'if' ->
-                    % Print the branch name in this case the 'if' and its line
+    case CurrentBranch of
+        CurrentBranch when CurrentBranch =< ParsedLenght ->
+            {Statement, Line, _} = lists:nth(CurrentBranch, Parsed),
+            case Statement of
+                'if' ->
                     io:format("~p/~p -> ", [Statement, Line]),
-                    ClauseList = lists:nth(3, Branch),
-                    % Print the branch clauses differentiating what was and what was not executed
-                    print_clauses(ClauseList, counters:get(persistent_term:get(1),CurrentBranch), length(ClauseList)+1, 1, 4),
+                    ClauseList = lists:nth(CurrentBranch, Parsed),
+                    print_clauses(ClauseList, counters:get(persistent_term:get(1), CurrentBranch), length(ClauseList)+1, 1, 4),
                     io:fwrite("~n~n"),
                     get_result(ParsedLenght, Parsed, CurrentBranch + 1);
-
-                Statement == 'case' ->
-                    % Print the branch name in this case the 'case' and its line
+                'case' ->
                     io:format("~p/~p -> ", [Statement, Line]),
-                    ClauseList = lists:nth(4, Branch),
-                    % Print the branch clauses differentiating what was and what was not executed
-                    print_clauses(ClauseList, counters:get(persistent_term:get(1),CurrentBranch), length(ClauseList)+1, 1, 3),
+                    ClauseList = lists:nth(CurrentBranch, Parsed),
+                    print_clauses(ClauseList, counters:get(persistent_term:get(1), CurrentBranch), length(ClauseList)+1, 1, 3),
                     io:fwrite("~n~n"),
                     get_result(ParsedLenght, Parsed, CurrentBranch + 1);
-                true ->
+                _ ->
                     io:fwrite("Nada ~n")
             end;
-        true ->
+        _ ->
             ok
     end.
+
 
 
 % ------------------------------------------ PRINT CLAUSES------------------------------------------------------------
 
 % For each clause of the if it prints if it was or not executed
 print_clauses(Clauses, Num, Length, Current, OprNum) ->
-    if
-        Current == Num ->
-            Expr = tuple_to_list(lists:nth(Current, Clauses)),
-            Opr = lists:nth(OprNum, Expr),
-            Line = lists:nth(2, Expr),
+    case Current of
+        Num ->
+            {_, Line, Opr} = lists:nth(Current, Clauses),
             io:format("~p/~p -> ", [Opr, Line]),
             print_clauses(Clauses, Num, Length, Current + 1, OprNum);
-        Current == Length ->
+        Length ->
             ok;
-        true ->
-            Expr = tuple_to_list(lists:nth(Current, Clauses)),
-            Line = lists:nth(2, Expr),
+        _ ->
+            {_, Line} = lists:nth(Current, Clauses),
             io:fwrite("Clause not executed/~p -> ", [Line]),
             print_clauses(Clauses, Num, Length, Current + 1, OprNum)
     end.
