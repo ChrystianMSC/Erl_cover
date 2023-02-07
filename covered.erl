@@ -1,1 +1,0 @@
-if 5 == 6 -> io:fwrite("True"); true -> io:fwrite("False") end.
