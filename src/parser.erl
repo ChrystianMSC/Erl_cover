@@ -4,13 +4,9 @@
 
 
 evaluate_expression(FileName) ->
-    % Reading and parsing the code
     {Parsed, ParsedLenght} = parser(FileName),
-    % Filter the code to remove what is not branches 
     {FilteredParsed, FilteredLenght} = branch_filter(Parsed, ParsedLenght, 1),
-    % Instrument the code to see what gonna be executed
     InstrumentedParsed = instrument(FilteredParsed, FilteredLenght),
-    % Execute the code and see the result
     {value, Result, _} = erl_eval:exprs(InstrumentedParsed, []),
     get_result(FilteredLenght, FilteredParsed, 1),
     Result.
