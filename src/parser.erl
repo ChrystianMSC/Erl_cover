@@ -3,16 +3,16 @@
 -compile(export_all).
 
 
-evaluate_expression(FileName) ->
-    {Parsed, ParsedLenght} = parser(FileName),
-    {FilteredParsed, FilteredLenght} = branch_filter(Parsed, ParsedLenght, 1),
-    InstrumentedParsed = instrument(FilteredParsed, FilteredLenght),
+evaluate_and_get_result(FileName) ->
+    {Parsed, ParsedLenght} = parse_code(FileName),
+    {FilteredParsed, FilteredLenght} = filter_branches(Parsed, ParsedLenght, 1),
+    InstrumentedParsed = instrument_code(FilteredParsed, FilteredLenght),
     {value, Result, _} = erl_eval:exprs(InstrumentedParsed, []),
     get_result(FilteredLenght, FilteredParsed, 1),
     Result.
 
 % Reading and parsing the code
-parser(FileName) ->
+parse_code(FileName) ->
     {ok, File} = file:read_file(FileName),
     Expression = unicode:characters_to_list(File),
     {ok, Tokens, _} = erl_scan:string(Expression),
@@ -21,15 +21,15 @@ parser(FileName) ->
     {Parsed, ParsedLenght}.
 
 % Filter the code to remove what are not branches 
-branch_filter(Parsed, Lenght, CurrentBranch) ->
+filter_branches(Parsed, Lenght, CurrentBranch) ->
     case CurrentBranch =< Lenght of
         true ->
             Statement = lists:nth(1, tuple_to_list(lists:nth(CurrentBranch, Parsed))),
             case Statement of
                 'if' ->
-                    branch_filter(Parsed, Lenght, CurrentBranch + 1);
+                    filter_branches(Parsed, Lenght, CurrentBranch + 1);
                 'case' ->
-                    branch_filter(Parsed, Lenght, CurrentBranch + 1);
+                    filter_branches(Parsed, Lenght, CurrentBranch + 1);
                 _ ->
                     NewParsed = erlang:delete_element(CurrentBranch, list_to_tuple(Parsed)),
                     FilteredParsed = tuple_to_list(NewParsed),
@@ -38,27 +38,25 @@ branch_filter(Parsed, Lenght, CurrentBranch) ->
                             true -> CurrentBranch;
                             false -> CurrentBranch - 1
                         end,
-                    branch_filter(FilteredParsed, Lenght - 1, NewCurrentBranch)
+                    filter_branches(FilteredParsed, Lenght - 1, NewCurrentBranch)
             end;
         false ->
             {Parsed, Lenght}
     end.
 
-% Create a counter where each position is a branch,  add the ccounter to the persistent_term, and instrument
-instrument(Parsed, Lenght) ->
+% Create a counter where each position is a branch,  add the ccounter to the persistent_term, and instrument_code
+instrument_code(Parsed, Lenght) ->
     Counter = counters:new(Lenght, [atomics]),
     persistent_term:put(1, Counter),
-    Holder = [],
-    InstrumentedParsed = instrument_parsed(Parsed, Lenght, 1, Holder),
-    InstrumentedParsed.
+    instrument_parsed_code(Parsed, Lenght, 1, []).
 
 
 % Instrument each branch individually, recursively and store it in the Holder
-instrument_parsed(Parsed, Length, CurrentBranch, Holder) ->
+instrument_parsed_code(Parsed, Length, CurrentBranch, Holder) ->
   case CurrentBranch =< Length of
     true ->
       InstrumentingParsed = Holder ++ [instrument_branch(Parsed, CurrentBranch)],
-      instrument_parsed(Parsed, Length, CurrentBranch + 1, InstrumentingParsed);
+      instrument_parsed_code(Parsed, Length, CurrentBranch + 1, InstrumentingParsed);
     false ->
       Holder
   end.
@@ -70,18 +68,17 @@ instrument_branch(Parsed, CurrentBranch) ->
     Statement = element(1, Branch),
 
     case Statement of
-        'if' -> statement_instrument(Branch, CurrentBranch, Parsed, 3);
-        'case' -> statement_instrument(Branch, CurrentBranch, Parsed, 4);
+        'if' -> instrument_statement(Branch, CurrentBranch, Parsed, 3);
+        'case' -> instrument_statement(Branch, CurrentBranch, Parsed, 4);
         _ -> io:fwrite("Nada ~n")
     end.
 
-statement_instrument(Branch, CurrentBranch, Parsed, Statement) ->
+instrument_statement(Branch, CurrentBranch, Parsed, Statement) ->
     ClauseList = element(Statement, Branch),
     Instrumented = instrument_clauses(ClauseList, length(ClauseList)+1, 1, CurrentBranch),
     Filter = erlang:delete_element(length(Instrumented), list_to_tuple(Instrumented)),
     InstrumentedClauses = tuple_to_list(Filter),
-    InstrumentedgParsed = setelement(Statement, lists:nth(CurrentBranch, Parsed), InstrumentedClauses),
-    InstrumentedgParsed.
+    setelement(Statement, lists:nth(CurrentBranch, Parsed), InstrumentedClauses).
 
 instrument_clauses(ClauseList, Length, Current, CurrentBranch) ->
     if
@@ -98,8 +95,8 @@ instrument_clauses(ClauseList, Length, Current, CurrentBranch) ->
             ClauselistInstrumented = [ClauseInstrumented] ++ instrument_clauses(ClauseList, Length, Current + 1, CurrentBranch),
             ClauselistInstrumented;
         true ->
-            Fim = [ok],
-            [Fim]
+            End = [ok],
+            [End]
     end.
 
 
